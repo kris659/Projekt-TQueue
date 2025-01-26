@@ -210,7 +210,7 @@ void removeMsg(TQueue *queue, void *msg){
         }
     }
     if(messageIndex == -1 || queue->notReceivedCount[messageIndex] == 0){
-        printf("Message to remove not found!\n");
+        // printf("Message to remove not found!\n");
         pthread_mutex_unlock(&queue->mx_subscribers);
         pthread_mutex_unlock(&queue->mx_read);
         pthread_mutex_unlock(&queue->mx_write);
@@ -325,15 +325,15 @@ void setSize(TQueue *queue, int size){
     queue->messages = messages;
     queue->notReceivedCount = notReceivedCount;
 
-    for(int i = 0; i < size; i++){
-        if(queue->messages[i])
-        printf("%d ", *(int*)queue->messages[i]);
-        else{
-            printf("NULL ");
-        }
-    }
-    printf("\n");
-    printf("%d %d", queue->firstMessage, queue->newMessageIndex);
+    // for(int i = 0; i < size; i++){
+    //     if(queue->messages[i])
+    //     printf("%d ", *(int*)queue->messages[i]);
+    //     else{
+    //         printf("NULL ");
+    //     }
+    // }
+    // printf("\n");
+    // printf("%d %d", queue->firstMessage, queue->newMessageIndex);
     pthread_mutex_unlock(&queue->mx_subscribers);
     pthread_mutex_unlock(&queue->mx_read);
     pthread_mutex_unlock(&queue->mx_write);
