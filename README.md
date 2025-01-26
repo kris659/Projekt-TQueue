@@ -18,7 +18,7 @@ lang: pl-PL
 
 Projekt jest dostępny w repozytorium pod adresem:
 
-<https://git.cs.put.poznan.pl/voytek/project1>.
+<https://github.com/kris659/Projekt-TQueue>.
 
   
   
@@ -125,10 +125,15 @@ Jeżeli `queue.firstMessage == queue.newMessageIndex` oznacza to, że należy sp
 Plik `main.c` zawiera prosty program sprawdzający działanie przy jednym wątku piszącym i dwóch wątkach czytających z różnymi szybkościami (wątek `0` czyta dwa razy szybciej)
 
 Początkowo kolejka szybko się wypełnia (pojemność 4):
+
 ![enter image description here](https://i.postimg.cc/rw2ds4FW/Zrzut-ekranu-2025-01-25-235327.png)
+
 Następnie szybszy wątek odczytuje wiadomości szybciej od drugiego:
+
 ![enter image description here](https://i.postimg.cc/GmP4ypHf/Zrzut-ekranu-2025-01-25-235634.png)
+
 Do momentu gdy odczytał już wszystkie i również musi czekać na odczytanie wiadomości przez wolniejszy wątek:
+
 ![enter image description here](https://i.postimg.cc/43JmbTcx/Zrzut-ekranu-2025-01-25-235653.png)
   
 
