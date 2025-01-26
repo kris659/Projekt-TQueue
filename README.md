@@ -90,7 +90,8 @@ struct  TQueue {
  Wiadomości do odczytania są przechowywane w jednej tablicy. Mamy indeks pierwszej wiadomości i indeks wskazujący na miejsce na kolejną wiadomość.
  
  ## Subskrybent
- W momencie subskrybowania, subskrybent ma ustawianą wartość zmiennej: `sub.messageToRead = queue->newMessageIndex` 
+ W momencie subskrybowania, subskrybent ma ustawianą wartość zmiennej:
+ `sub.messageToRead = queue->newMessageIndex` 
  
  Gdy jest dodana nowa wiadomość zwiększana jest wartość zmiennej każdego 	 subkskrybenta:
  `sub.messagesCount++` 
