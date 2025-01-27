@@ -114,15 +114,15 @@ Plik `main.c` zawiera prosty program sprawdzający działanie przy jednym wątku
 
 Początkowo kolejka szybko się wypełnia (pojemność 4):
 
-!(https://i.postimg.cc/rw2ds4FW/Zrzut-ekranu-2025-01-25-235327.png)
+![Wypełnianie kolejki](https://i.postimg.cc/rw2ds4FW/Zrzut-ekranu-2025-01-25-235327.png)
 
 Następnie szybszy wątek odczytuje wiadomości szybciej od drugiego:
 
-!(https://i.postimg.cc/GmP4ypHf/Zrzut-ekranu-2025-01-25-235634.png)
+![Odczytywanie wiadomości](https://i.postimg.cc/GmP4ypHf/Zrzut-ekranu-2025-01-25-235634.png)
 
 Do momentu gdy odczytał już wszystkie i również musi czekać na odczytanie wiadomości przez wolniejszy wątek:
 
-!(https://i.postimg.cc/43JmbTcx/Zrzut-ekranu-2025-01-25-235653.png)
+![Odczytywanie wiadomości w tym samym tempie](https://i.postimg.cc/43JmbTcx/Zrzut-ekranu-2025-01-25-235653.png)
   
 
 -------------------------------------------------------------------------------
