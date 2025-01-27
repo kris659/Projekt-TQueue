@@ -1,26 +1,14 @@
-
 ---
-
 title: Publish-subscribe
-
 subtitle: Programowanie systemowe i współbieżne
-
 author: Krzysztof Pędzich 160416 \<<krzysztof.pedzich@student.put.poznan.pl>\>
-
-date: v1.0, 2025-01-25
-
+date: v1.1, 2025-01-27
 lang: pl-PL
-
 ---
-
-  
-  
 
 Projekt jest dostępny w repozytorium pod adresem:
 
-<https://github.com/kris659/Projekt-TQueue>.
-
-  
+<https://github.com/kris659/Projekt-TQueue>. 
   
 
 # Struktury danych  
@@ -45,7 +33,6 @@ struct  TQueue {
 	int  newMessageIndex;
 
 	Subscriber*  firstSub;
-	Subscriber*  lastSub;
 	int  subCount;
 	
 	void**  messages;
@@ -66,7 +53,7 @@ struct  TQueue {
 1. Zmienna `int  firstMessage` indeks najstarszej wiadomości (wiadomości odczytane są usuwane dopiero przy braku miejsca na nową). Wartość `-1` oznacza brak wiadomości.
 2. Zmienna `int  newMessageIndex` indeks na którym będzie zapisana kolejna wiadomość. Jeżeli `firstMessage == newMessageIndex` oznacza to, że kolejka jest pełna.
 
-3. Zmienne `Subscriber*  firstSub, lastSub;` najstarszego i najmłodszego subskrybenta, można przeiterować się po wszystkich subskrybentach używając `firstSub->next` .
+3. Zmienne `Subscriber*  firstSub;` najstarszego subskrybenta, można przeiterować się po wszystkich subskrybentach używając `firstSub->next` .
 
 4.  Tablica `void** messages` zawiera wskaźniki do wiadomości.
 
@@ -127,15 +114,15 @@ Plik `main.c` zawiera prosty program sprawdzający działanie przy jednym wątku
 
 Początkowo kolejka szybko się wypełnia (pojemność 4):
 
-![enter image description here](https://i.postimg.cc/rw2ds4FW/Zrzut-ekranu-2025-01-25-235327.png)
+!(https://i.postimg.cc/rw2ds4FW/Zrzut-ekranu-2025-01-25-235327.png)
 
 Następnie szybszy wątek odczytuje wiadomości szybciej od drugiego:
 
-![enter image description here](https://i.postimg.cc/GmP4ypHf/Zrzut-ekranu-2025-01-25-235634.png)
+!(https://i.postimg.cc/GmP4ypHf/Zrzut-ekranu-2025-01-25-235634.png)
 
 Do momentu gdy odczytał już wszystkie i również musi czekać na odczytanie wiadomości przez wolniejszy wątek:
 
-![enter image description here](https://i.postimg.cc/43JmbTcx/Zrzut-ekranu-2025-01-25-235653.png)
+!(https://i.postimg.cc/43JmbTcx/Zrzut-ekranu-2025-01-25-235653.png)
   
 
 -------------------------------------------------------------------------------
