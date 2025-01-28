@@ -9,46 +9,43 @@ lang: pl-PL
 Projekt jest dostępny w repozytorium pod adresem:
 
 <https://github.com/kris659/Projekt-TQueue>. 
-  
 
-# Struktury danych  
-  
-  1. Struktura subskrybenta `Subscriber`:
-```C
-struct  Subscriber{
-	pthread_t  key; // Identyfikator subskrybenta
-	int  messageToReadIndex;
-	int  messagesCount; 
-	Subscriber*  next; // Wskaźnik na kolejnego subskrybenta
-};
-```
+# Struktury danych
+
+1. Struktura subskrybenta `Subscriber`:
+
+	```C
+	    struct  Subscriber{
+	         pthread_t  key; // Identyfikator subskrybenta
+	         int  messageToReadIndex;
+	         int  messagesCount;
+	         Subscriber*  next; // Wskaźnik na kolejnego subskrybenta
+	    };
+	```
 
 2. Struktura kolejki `TQueue`:
  
 
-```C
-struct  TQueue {
-	int  maxSize;
-	int  firstMessage;
-	int  newMessageIndex;
-
-	Subscriber*  firstSub;
-	int  subCount;
+	```C
+	struct  TQueue {
+		int  maxSize;
+		int  firstMessage;
+		int  newMessageIndex;
 	
-	void**  messages;
-	int*  notReceivedCount;
-
-	pthread_mutex_t  mx_read;
-	pthread_mutex_t  mx_write;
-	pthread_mutex_t  mx_subscribers;
-
-	pthread_cond_t  cond_read;
-	pthread_cond_t  cond_write; 
-};
-```
-
-
-  
+		Subscriber*  firstSub;
+		int  subCount;
+		
+		void**  messages;
+		int*  notReceivedCount;
+	
+		pthread_mutex_t  mx_read;
+		pthread_mutex_t  mx_write;
+		pthread_mutex_t  mx_subscribers;
+	
+		pthread_cond_t  cond_read;
+		pthread_cond_t  cond_write; 
+	};
+	``` 
 
 1. Zmienna `int  firstMessage` indeks najstarszej wiadomości (wiadomości odczytane są usuwane dopiero przy braku miejsca na nową). Wartość `-1` oznacza brak wiadomości.
 2. Zmienna `int  newMessageIndex` indeks na którym będzie zapisana kolejna wiadomość. Jeżeli `firstMessage == newMessageIndex` oznacza to, że kolejka jest pełna.
