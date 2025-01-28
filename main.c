@@ -9,20 +9,100 @@
 pthread_t readers_th[N];
 TQueue* queue;
 
-void* writer(void* info) {
-    int msg = 0;
-    subscribe(queue, readers_th[1]);
-    subscribe(queue, readers_th[0]);
-    unsubscribe(queue, readers_th[1]);
-    addMsg(queue, &msg);
-    printf("Av0: %d\n", getAvailable(queue, readers_th[0]));
-    subscribe(queue, readers_th[1]);
-    printf("Av0: %d\n", getAvailable(queue, readers_th[0]));
-    printf("Av1: %d\n", getAvailable(queue, readers_th[1]));
-    addMsg(queue, &msg);
-    printf("Av0: %d\n", getAvailable(queue, readers_th[0]));
-    printf("Av1: %d\n", getAvailable(queue, readers_th[1]));
+void readInt(int reader_id){
+    void* msg = getMsg(queue, readers_th[reader_id]);
+    if(msg){
+        int msgInt = *(int*)msg;
+        printf("READER: %d | Read: %d\n", reader_id, msgInt);
+    }
+    else{
+        printf("READ | NULL pointer\n");
+    }
+}
 
+void* writer(void* info) {
+    int msg[3] = {0,1,2};
+    subscribe(queue, readers_th[0]);
+    addMsg(queue, &msg[0]);
+    subscribe(queue, readers_th[1]);
+    addMsg(queue, &msg[1]);
+    subscribe(queue, readers_th[2]);
+    addMsg(queue, &msg[2]);
+    printf("Av0: %d\n", getAvailable(queue, readers_th[0]));
+    printf("Av1: %d\n", getAvailable(queue, readers_th[1]));
+    printf("Av2: %d\n", getAvailable(queue, readers_th[2]));
+    // removeMsg(queue, &msg[0]);
+    // removeMsg(queue, &msg[1]);
+    // removeMsg(queue, &msg[2]);
+    unsubscribe(queue, readers_th[0]);
+    printf("Av0: %d\n", getAvailable(queue, readers_th[0]));
+    printf("Av1: %d\n", getAvailable(queue, readers_th[1]));
+    printf("Av2: %d\n", getAvailable(queue, readers_th[2]));
+    addMsg(queue, &msg[0]);
+    printf("Av0: %d\n", getAvailable(queue, readers_th[0]));
+    printf("Av1: %d\n", getAvailable(queue, readers_th[1]));
+    printf("Av2: %d\n", getAvailable(queue, readers_th[2]));
+    
+    readInt(0);
+    readInt(1);
+    readInt(2);
+    readInt(0);
+    readInt(1);
+    readInt(2);
+    readInt(0);
+    readInt(1);
+    addMsg(queue, &msg[0]);
+    addMsg(queue, &msg[1]);
+    addMsg(queue, &msg[2]);
+    printf("Av0: %d\n", getAvailable(queue, readers_th[0]));
+    printf("Av1: %d\n", getAvailable(queue, readers_th[1]));
+    printf("Av2: %d\n", getAvailable(queue, readers_th[2]));
+    setSize(queue, 1);
+    printf("Av0: %d\n", getAvailable(queue, readers_th[0]));
+    printf("Av1: %d\n", getAvailable(queue, readers_th[1]));
+    printf("Av2: %d\n", getAvailable(queue, readers_th[2]));
+    readInt(0);
+    readInt(1);
+    readInt(2);
+    setSize(queue, 10);
+    printf("Av0: %d\n", getAvailable(queue, readers_th[0]));
+    printf("Av1: %d\n", getAvailable(queue, readers_th[1]));
+    printf("Av2: %d\n", getAvailable(queue, readers_th[2]));
+    addMsg(queue, &msg[0]);
+    addMsg(queue, &msg[0]);
+    addMsg(queue, &msg[0]);
+    addMsg(queue, &msg[2]);
+    addMsg(queue, &msg[0]);
+    subscribe(queue, readers_th[0]);
+    printf("Av0: %d\n", getAvailable(queue, readers_th[0]));
+    printf("Av1: %d\n", getAvailable(queue, readers_th[1]));
+    printf("Av2: %d\n", getAvailable(queue, readers_th[2]));
+    setSize(queue, 2);
+    printf("Av0: %d\n", getAvailable(queue, readers_th[0]));
+    printf("Av1: %d\n", getAvailable(queue, readers_th[1]));
+    printf("Av2: %d\n", getAvailable(queue, readers_th[2]));
+    // readInt(0);
+    readInt(1);
+    readInt(2);
+    addMsg(queue, &msg[1]);
+    addMsg(queue, &msg[2]);
+    readInt(0);
+    readInt(1);
+    readInt(2);
+    removeMsg(queue, &msg[2]);
+    addMsg(queue, &msg[0]);
+    readInt(0);
+    readInt(1);
+    readInt(2);
+    // addMsg(queue, &msg);
+    // printf("Av0: %d\n", getAvailable(queue, readers_th[0]));
+    // subscribe(queue, readers_th[1]);
+    // printf("Av0: %d\n", getAvailable(queue, readers_th[0]));
+    // printf("Av1: %d\n", getAvailable(queue, readers_th[1]));
+    // addMsg(queue, &msg);
+    // printf("Av0: %d\n", getAvailable(queue, readers_th[0]));
+    // printf("Av1: %d\n", getAvailable(queue, readers_th[1]));
+    // destroyQueue(queue);
     // sleep(1);
     // // int id = *(int*)info;
     // int wiad[N*100];
@@ -58,17 +138,6 @@ void* writer(void* info) {
     // }
     sleep(100);
     return NULL;
-}
-
-void readInt(int reader_id){
-    void* msg = getMsg(queue, readers_th[reader_id]);
-    if(msg){
-        int msgInt = *(int*)msg;
-        printf("READER: %d | Read: %d\n", reader_id, msgInt);
-    }
-    else{
-        printf("READ | NULL pointer\n");
-    }
 }
 
 void* inf_reader(void* info) {
@@ -120,7 +189,7 @@ void* reader(void* info) {
     //     sleep(1);
     //     readInt(id);
     // }
-
+    sleep(100);
     return NULL;
 }
 
@@ -157,7 +226,7 @@ int main() {
     int tid[N];
 
     pthread_t writer_th;
-    queue = createQueue(4);
+    queue = createQueue(3);
 
     for(int i = 0; i < N; i++){
         tid[i] = i;
@@ -167,6 +236,7 @@ int main() {
     // pthread_create(&writer_th, NULL, writer, &tid[0]);
     pthread_create(&readers_th[0], NULL, inf_reader, &tid[0]);
     pthread_create(&readers_th[1], NULL, inf_reader_2, &tid[1]);
+    pthread_create(&readers_th[2], NULL, inf_reader_2, &tid[2]);
     // pthread_create(&readers_th[1], NULL, reader, &tid[1]);
     pthread_create(&writer_th, NULL, writer, &tid[0]);
 
