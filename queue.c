@@ -18,9 +18,7 @@ TQueue* createQueue(int size){
     queue->firstSub = NULL;
     queue->subCount = 0;
 
-    pthread_mutex_init(&queue->mx_read, NULL);
-    pthread_mutex_init(&queue->mx_write, NULL);
-    pthread_mutex_init(&queue->mx_subscribers, NULL);
+    pthread_mutex_init(&queue->mx, NULL);
     pthread_cond_init(&queue->cond_read, NULL);
     pthread_cond_init(&queue->cond_write, NULL);
 
@@ -28,9 +26,7 @@ TQueue* createQueue(int size){
 }
 
 void destroyQueue(TQueue *queue){
-    pthread_mutex_lock(&queue->mx_write);
-    pthread_mutex_lock(&queue->mx_read);
-    pthread_mutex_lock(&queue->mx_subscribers);
+    pthread_mutex_lock(&queue->mx);
 
     Subscriber *sub = queue->firstSub;
     Subscriber* previous;
@@ -44,9 +40,7 @@ void destroyQueue(TQueue *queue){
     free(queue->notReceivedCount);
     free(queue);
 
-    pthread_mutex_unlock(&queue->mx_subscribers);
-    pthread_mutex_unlock(&queue->mx_read);
-    pthread_mutex_unlock(&queue->mx_write);
+    pthread_mutex_unlock(&queue->mx);
 }
 
 void subscribe(TQueue *queue, pthread_t thread){
@@ -55,13 +49,13 @@ void subscribe(TQueue *queue, pthread_t thread){
     newSub->messagesCount = 0;
     newSub->next = NULL;
     
-    pthread_mutex_lock(&queue->mx_subscribers);
+    pthread_mutex_lock(&queue->mx);
     newSub->messageToReadIndex = queue->newMessageIndex;
     
     if(queue->subCount == 0){
         queue->firstSub = newSub;
         queue->subCount++;
-        pthread_mutex_unlock(&queue->mx_subscribers);
+        pthread_mutex_unlock(&queue->mx);
         return;
     }
     Subscriber *sub = queue->firstSub;
@@ -70,54 +64,65 @@ void subscribe(TQueue *queue, pthread_t thread){
     }
     sub->next = newSub;
     queue->subCount++;
-    pthread_mutex_unlock(&queue->mx_subscribers);
+    pthread_mutex_unlock(&queue->mx);
+}
+
+Subscriber* getSubscriber(TQueue *queue, pthread_t thread){
+    pthread_mutex_lock(&queue->mx);
+
+    Subscriber* sub = queue->firstSub;
+    while(sub && sub->key != thread){
+        sub = sub->next;
+    }
+
+    pthread_mutex_unlock(&queue->mx);
+    return sub;
 }
 
 void unsubscribe(TQueue *queue, pthread_t thread){
-    pthread_mutex_lock(&queue->mx_write);
-    int avaiableMessages = getAvailable(queue, thread);
-    while(avaiableMessages--){
-        getMsg(queue, thread);
-    }
+    Subscriber *sub = getSubscriber(queue, thread);
 
-    pthread_mutex_lock(&queue->mx_subscribers);
+    if(sub == NULL)
+        return;
+    
+    pthread_mutex_lock(&queue->mx);
+
+    while(sub->messagesCount > 0){
+        queue->notReceivedCount[sub->messageToReadIndex]--;
+        sub->messageToReadIndex = mod(queue, sub->messageToReadIndex + 1);
+        sub->messagesCount--;
+    }
+    pthread_cond_broadcast(&queue->cond_write);
 
     queue->subCount--;
-    if(queue->subCount == 0){
-        free(queue->firstSub);
-        queue->firstSub = NULL;
-        pthread_mutex_unlock(&queue->mx_subscribers);
-        pthread_mutex_unlock(&queue->mx_write);
-        return;
-    }
-    if(queue->firstSub->key == thread){
-        Subscriber *temp = queue->firstSub;
-        queue->firstSub = temp->next; 
-        free(temp);
-        
-        pthread_mutex_unlock(&queue->mx_subscribers);
-        pthread_mutex_unlock(&queue->mx_write);
-        return;
-    }
-    Subscriber *sub = queue->firstSub;
-    while(sub && sub->next && sub->next->key != thread){
+
+    sub = queue->firstSub;
+    Subscriber *previousSub = NULL;
+
+    while(sub && sub->key != thread){
+        previousSub = sub;
         sub = sub->next;
     }
-    if(sub && sub->next && sub->next->key == thread){
-        Subscriber *temp = sub->next; 
-        sub->next = temp->next;        
-        free(temp);
+
+    if(sub && sub->key == thread){
+        if(previousSub)
+            previousSub->next = sub->next;    
+        else
+            queue->firstSub = sub->next;
+        free(sub);
     }
-    
-    pthread_mutex_unlock(&queue->mx_subscribers);
-    pthread_mutex_unlock(&queue->mx_write);
+    pthread_mutex_unlock(&queue->mx);
 }
 
 void addMsg(TQueue *queue, void *msg){
-    pthread_mutex_lock(&queue->mx_write);
-    while(queue->firstMessage == queue->newMessageIndex){        
-        pthread_mutex_lock(&queue->mx_read);
+    pthread_mutex_lock(&queue->mx);
 
+    if(queue->subCount == 0){
+        pthread_mutex_unlock(&queue->mx);
+        return;
+    }
+
+    while(queue->firstMessage == queue->newMessageIndex){
         while(queue->firstMessage != -1 && queue->notReceivedCount[queue->firstMessage] == 0){
             queue->firstMessage = mod(queue, queue->firstMessage + 1);
             if(queue->firstMessage == queue->newMessageIndex){
@@ -125,16 +130,9 @@ void addMsg(TQueue *queue, void *msg){
             }
         }
         if(queue->firstMessage == queue->newMessageIndex)
-            pthread_cond_wait(&queue->cond_write, &queue->mx_read);
-        pthread_mutex_unlock(&queue->mx_read);
+            pthread_cond_wait(&queue->cond_write, &queue->mx);
     }
-
-    pthread_mutex_lock(&queue->mx_subscribers);
-
-    if(queue->subCount == 0){
-        pthread_mutex_unlock(&queue->mx_subscribers);
-        return;
-    }
+    
     if(queue->firstMessage == -1){
         queue->firstMessage = queue->newMessageIndex;
     }
@@ -149,23 +147,8 @@ void addMsg(TQueue *queue, void *msg){
         sub = sub->next;
     }
 
-    pthread_mutex_unlock(&queue->mx_subscribers);
-    pthread_mutex_unlock(&queue->mx_write);
+    pthread_mutex_unlock(&queue->mx);
     pthread_cond_broadcast(&queue->cond_read);
-}
-
-Subscriber* getSubscriber(TQueue *queue, pthread_t thread){
-    pthread_mutex_lock(&queue->mx_subscribers);
-
-    Subscriber* sub = queue->firstSub;
-    while(sub && sub->key != thread){
-        sub = sub->next;
-    }
-    // if(!sub){
-    //     printf("Nie subskybuje\n");
-    // }
-    pthread_mutex_unlock(&queue->mx_subscribers);
-    return sub;
 }
 
 void* getMsg(TQueue *queue, pthread_t thread){
@@ -173,9 +156,9 @@ void* getMsg(TQueue *queue, pthread_t thread){
     if(!sub)
         return NULL;
 
-    pthread_mutex_lock(&queue->mx_read);
+    pthread_mutex_lock(&queue->mx);
     while(sub->messagesCount == 0){
-        pthread_cond_wait(&queue->cond_read, &queue->mx_read);
+        pthread_cond_wait(&queue->cond_read, &queue->mx);
     }
 
     int messageToRead = sub->messageToReadIndex;
@@ -184,8 +167,8 @@ void* getMsg(TQueue *queue, pthread_t thread){
     sub->messagesCount--;
     void* message = queue->messages[messageToRead];
 
-    pthread_mutex_unlock(&queue->mx_read);
-    pthread_cond_signal(&queue->cond_write);
+    pthread_mutex_unlock(&queue->mx);
+    pthread_cond_broadcast(&queue->cond_write);
     return message;
 }
 
@@ -193,14 +176,11 @@ int getAvailable(TQueue *queue, pthread_t thread){
     Subscriber* sub = getSubscriber(queue, thread);
     if(!sub)
         return 0; 
-    // return mod(queue, queue->newMessageIndex - sub->messageToReadIndex);
     return sub->messagesCount;
 }
 
 void removeMsg(TQueue *queue, void *msg){
-    pthread_mutex_lock(&queue->mx_write);
-    pthread_mutex_lock(&queue->mx_read);
-    pthread_mutex_lock(&queue->mx_subscribers);
+    pthread_mutex_lock(&queue->mx);
 
     int messageIndex = -1;
     for(int i = 0; i < queue->maxSize; i++){
@@ -212,9 +192,7 @@ void removeMsg(TQueue *queue, void *msg){
 
     if(messageIndex == -1 || queue->notReceivedCount[messageIndex] == 0){
         // printf("Message to remove not found!\n");
-        pthread_mutex_unlock(&queue->mx_subscribers);
-        pthread_mutex_unlock(&queue->mx_read);
-        pthread_mutex_unlock(&queue->mx_write);
+        pthread_mutex_unlock(&queue->mx);
         return;
     }
 
@@ -254,20 +232,14 @@ void removeMsg(TQueue *queue, void *msg){
         queue->firstMessage = -1;
     }
 
-    pthread_mutex_unlock(&queue->mx_subscribers);
-    pthread_mutex_unlock(&queue->mx_read);
-    pthread_mutex_unlock(&queue->mx_write);
+    pthread_mutex_unlock(&queue->mx);
+    pthread_cond_broadcast(&queue->cond_write);
 }
 
-void setSize(TQueue *queue, int size){
-    pthread_mutex_lock(&queue->mx_write);
-    pthread_mutex_lock(&queue->mx_read);
-    pthread_mutex_lock(&queue->mx_subscribers);
+void setSize(TQueue *queue, int size){   
+    pthread_mutex_lock(&queue->mx);
 
     if(size == queue->maxSize){
-        pthread_mutex_unlock(&queue->mx_subscribers);
-        pthread_mutex_unlock(&queue->mx_read);
-        pthread_mutex_unlock(&queue->mx_write);
         return;
     }
 
@@ -300,7 +272,7 @@ void setSize(TQueue *queue, int size){
         }
         
         for(int i = 0; i < messagesCount && i < size; i++){
-            // Przepisanie wiadomości
+            // Przepisanie pozostałych wiadomości na początek
             messages[i] = queue->messages[queue->firstMessage];
             notReceivedCount[i] = queue->notReceivedCount[queue->firstMessage];            
             queue->firstMessage = mod(queue, queue->firstMessage + 1);
@@ -309,6 +281,7 @@ void setSize(TQueue *queue, int size){
         queue->newMessageIndex = messagesCount % size;
         queue->firstMessage = 0;
 
+        // Ustawienie sub->messageToReadIndex
         Subscriber* sub = queue->firstSub;
         while(sub){
             if(sub->messagesCount == 0){
@@ -336,7 +309,6 @@ void setSize(TQueue *queue, int size){
     queue->messages = messages;
     queue->notReceivedCount = notReceivedCount;
 
-    pthread_mutex_unlock(&queue->mx_subscribers);
-    pthread_mutex_unlock(&queue->mx_read);
-    pthread_mutex_unlock(&queue->mx_write);
+    pthread_mutex_unlock(&queue->mx);
+    pthread_cond_broadcast(&queue->cond_write);
 }

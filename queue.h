@@ -30,9 +30,7 @@ struct TQueue {
 	void** messages;
 	int* notReceivedCount;
 
-	pthread_mutex_t mx_read;
-	pthread_mutex_t mx_write;
-	pthread_mutex_t mx_subscribers;
+	pthread_mutex_t mx;
 	pthread_cond_t cond_read;
 	pthread_cond_t cond_write;
 
